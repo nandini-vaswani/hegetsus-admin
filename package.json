@@ -1,0 +1,13 @@
+{
+  "name": "hegetsus-admin-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone Experiments / Feature Flags / Analytics admin demo — no build step, no dependencies.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
