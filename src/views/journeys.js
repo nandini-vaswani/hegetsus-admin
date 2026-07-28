@@ -157,7 +157,7 @@ export function renderJourneyDetail(root, id) {
         </div>
       </div>
 
-      <p class="proto-note">Personalization and Experiments both deliver through GrowthBook Features, but they're distinct mechanisms: a personalization policy is a string-valued feature whose <code>rules</code> are deterministic <code>force</code> rules keyed on a segment's condition, with a default/fallback; an experiment is a feature whose value is randomly split across variants. Same delivery pipe, different assignment logic — see the Architecture Brief, scenario 3.5.</p>
+      <p class="proto-note">Personalization and Experiments both deliver through GrowthBook Features, but they're distinct mechanisms: a personalization policy is a string-valued feature whose <code>rules</code> are deterministic <code>force</code> rules keyed on a segment's condition, with a default/fallback; an experiment is a feature whose value is randomly split across variants. Same delivery pipe, different assignment logic.</p>
     </div>
   `;
 

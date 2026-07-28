@@ -58,6 +58,7 @@ button{ font-family:inherit; }
 .sidebar{
   width:230px; flex:none; background:var(--bg); border-right:1px solid var(--rule);
   padding:18px 14px; display:flex; flex-direction:column; gap:20px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
 }
 .sidebar .brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.92rem; padding:0 6px; }
 .sidebar .brand .mark{ width:18px; height:18px; }
