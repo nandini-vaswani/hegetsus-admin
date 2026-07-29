@@ -1,13 +1,47 @@
 {
-  "name": "hegetsus-admin-demo",
-  "version": "0.1.0",
-  "private": true,
+  "name": "hegetsus-admin",
+  "version": "1.0.0",
+  "description": "A real, running Payload CMS admin — Topics, Segments, and Journeys with block-level personalization.",
+  "license": "MIT",
   "type": "module",
-  "description": "Standalone Experiments / Feature Flags / Analytics admin demo — no build step, no dependencies.",
   "scripts": {
-    "start": "node server.js"
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "dev": "pnpm generate:importmap && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "devsafe": "rm -rf .next && pnpm dev",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
+  },
+  "dependencies": {
+    "@payloadcms/db-sqlite": "3.80.0",
+    "@payloadcms/next": "3.80.0",
+    "@payloadcms/richtext-lexical": "3.80.0",
+    "@payloadcms/ui": "3.80.0",
+    "cross-env": "^7.0.3",
+    "graphql": "^16.8.1",
+    "next": "16.2.1",
+    "payload": "3.80.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "16.2.1",
+    "typescript": "5.7.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^18.20.2 || >=20.9.0",
+    "pnpm": "^9 || ^10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver"
+    ]
   }
 }

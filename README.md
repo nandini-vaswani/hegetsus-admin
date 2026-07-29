@@ -1,128 +1,91 @@
-# Admin — Experiments, Feature Flags, Personalization, Analytics
+# hegetsus-admin — a real Payload CMS
 
-A real, running admin app — not a static mockup. No build step, no npm install
-required, no framework. Data persists in your browser's local storage, so
-edits, new records, and deletions all survive a page reload.
+A real, running [Payload CMS](https://payloadcms.com) 3 install — Topics, Journeys, and
+Variant management for personalized content. This used to be a hand-built,
+localStorage-backed mockup that only *looked* like a CMS admin; it now is one.
+
+This is a standalone demo build, independent of `he-gets-us-cms` (the production CMS) —
+it does not read from or write to that project or its database.
+
+Experiments, Feature Flags, and Segments are intentionally not managed here — they
+live in a separate experimentation/personalization platform, configured there
+directly. Payload has no integration with that platform at all: it only stores
+Variant content, keyed by a string an editor types in to match whatever key that
+platform is configured to return for a rule. A separate proxy service reads
+variants through Payload's normal API, decides which variant a visitor gets, and
+serves the resolved content to the frontend.
 
 ## What's in here
 
-- **Experiments** — A/B/n tests: variants with traffic-split weights,
-  hypothesis, metrics, analysis settings, which content a test applies to,
-  a Versions history, an API tab, and a real GrowthBook Sync (creates/updates
-  a boolean feature via GrowthBook's v2 API).
-- **Feature Flags** — standalone rollout switches with per-environment
-  on/off state, optionally linked to an Experiment.
-- **Journeys** — content blocks (Hero, Video, Text, Rotating Prayer, Next
-  Step), each addable/reorderable/removable. Any block except the dynamic
-  Rotating Prayer can be **personalized**: an ordered assignment policy maps
-  Segments to Variants ("arms"), with a required default/fallback, a live
-  preview of the exact GrowthBook payload it maps to, and a real GrowthBook
-  Sync (creates/updates a string-valued feature with `force` targeting
-  rules). Journeys also carry **Topics** and show **Related content** —
-  other journeys sharing a topic.
-- **Segments** — reusable visitor-population definitions (geography,
-  device, network, referral/campaign), each with attribute rules and a
-  live GrowthBook targeting-condition preview. Referenced by any number of
-  personalized blocks.
-- **Topics** — a content taxonomy independent of Segments: what a piece of
-  content is *about*, not who sees it. Currently spans Journeys only; built
-  so a future Stories or Connect pillar could tag into the same list.
-- **Analytics** — a read-only sample dashboard (stat tiles, a 14-day chart,
-  a funnel, an events table).
-- **GrowthBook Sync** (Experiments and Personalization) — real, not
-  simulated, when a `.env` (local) or the deployment's env vars supply
-  `GROWTHBOOK_API_KEY` / `GROWTHBOOK_OWNER_EMAIL`; otherwise every sync
-  button runs in an honest "demo mode" that simulates the response instead
-  of silently failing.
+- **Journeys** (`src/collections/Journeys.ts`) — content blocks (Hero, Video, Text,
+  Rotating Prayer, Next Step — see `src/blocks/`). Journeys also carry **Topics**.
+- **Variants** (`src/collections/Variants.ts`) — one document per rule/key, targeting
+  one page and (optionally) one block on it. Scope is inferred from how far an editor
+  drills in, not chosen explicitly:
+  - No block picked → **page scope**: an ordered, filtered list of the page's
+    existing blocks to show (blocks not listed are hidden).
+  - A block picked, no field overrides → **block scope**: a visibility toggle +
+    reorder position for that one block, leaving the rest of the page as authored.
+  - A field override targets a text/media field → **field scope**: one or more
+    override values (`overrideText`/`overrideMedia`), letting one document touch
+    several fields at once.
+  - A field override targets a list field (e.g. NextStep's `options`) → **list
+    scope**: named alternatives (e.g. "control", "expanded"), each with its own
+    replacement item list.
+  A variant never authors new block content at page/block/field scope — it only
+  reorders/filters/overrides the blocks already authored on the base Journey.
+  Picking a page/block/field uses two custom components
+  (`src/components/BlockPicker.tsx`, `FieldPicker.tsx`) that fetch the selected
+  page's actual blocks live, rather than a static list.
+- **Topics** (`src/collections/Topics.ts`) — a content taxonomy: what a piece of
+  content is *about*.
 
 ## Run it
 
 ```sh
-node server.js
+pnpm install
+pnpm dev
 ```
 
-Then open **http://localhost:5173**.
+Then open **http://localhost:3000/admin** and create the first admin user.
 
-Requires Node 18+ (uses the built-in `fetch` and ES modules — no dependencies
-to install).
+Data is stored in a local SQLite file (`hegetsus-admin.db`, gitignored) — no external
+database or Docker required.
 
-## What's real vs. simulated
-
-- **Everything in the UI is real**: creating, editing, deleting Experiments
-  and Feature Flags; toggling environments; the Journeys ↔ Experiments
-  relationship; all of it reads from and writes to an actual local data store
-  (`src/lib/store.js`), persisted to `localStorage`.
-- **"Sync to GrowthBook"** calls a real local server endpoint
-  (`/api/growthbook/sync` in `server.js`). Until you connect a real GrowthBook
-  account (see below), that endpoint runs in **demo mode** and returns a
-  realistic simulated response instead of calling GrowthBook — you'll see
-  that reflected honestly in the sync status ("Simulated") and in the sidebar
-  ("GrowthBook: demo mode").
-- **Analytics** is static sample data — in a real build this would embed
-  GrowthBook's own analytics rather than reimplementing charts.
-
-## Connecting a real GrowthBook account
-
-1. In GrowthBook, create an API key with write access to Features:
-   `Settings → API Keys` (or your account's equivalent).
-2. Copy `.env.example` to `.env` in this folder:
-   ```sh
-   cp .env.example .env
-   ```
-3. Fill in `.env`:
-   ```
-   GROWTHBOOK_API_KEY=sk-your-real-key-here
-   GROWTHBOOK_OWNER_EMAIL=your-growthbook-login-email@example.com
-   ```
-   `GROWTHBOOK_OWNER_EMAIL` is required — GrowthBook attributes every feature
-   to an owner, and a plain API key (unlike a Personal Access Token) can't
-   infer one, so the request needs it explicitly.
-4. Restart the server (`node server.js`). The sidebar should now show
-   "Connected to GrowthBook," and "Sync to GrowthBook" will make a real API
-   call.
-
-**The key never reaches the browser.** It's read server-side only, in
-`growthbook-server.js`, exactly like the real CMS's Cloudflare tokens in
-`purge-frontend-cache/route.ts`. `.env` is gitignored — never commit it, and
-never paste a real key into chat or anywhere else outside this file.
-
-This has been verified end-to-end against a real GrowthBook account: syncing
-an experiment creates a real Feature in GrowthBook (`POST /api/v2/features`),
-and syncing it again correctly detects it already exists and patches it
-instead (`POST /api/v2/features/:id`).
+Note: the sqlite adapter runs in `push: true` mode (auto schema sync, no migrations).
+When a field is removed or renamed, `pnpm dev` will prompt interactively to confirm
+dropping the affected column — since that prompt blocks a backgrounded dev server, the
+simplest fix during active schema changes is to stop the server, delete
+`hegetsus-admin.db`, and restart.
 
 ## Project structure
 
 ```
-index.html                    App shell — sidebar, topbar, mount point
-server.js                     Local dev only: static file server + /api/growthbook/* routes
-growthbook-server.js          Server-side-only GrowthBook API client (never sent to browser)
-api/growthbook/               Vercel deploy only: the same routes as serverless functions
-  status.js
-  sync.js
-  sync-personalization.js
 src/
-  main.js                     Routes, sidebar active-state, toast
-  styles.css                  All styling
+  payload.config.ts           Collections, sqlite adapter
+  collections/
+    Users.ts                  Bare auth collection
+    Media.ts                  Local-disk uploads (Hero/Video block images/video)
+    Topics.ts                 Content taxonomy
+    Journeys.ts                title/slug/intro/topics + blocks
+    Variants.ts                 One doc per rule/key -- page/block/field/list scope
+  blocks/                       Hero, Video, Text, RotatingPrayer, NextStep
+  fields/
+    block-key.ts                Shared "key" field factory (stable block identifier)
   lib/
-    store.js                  Data layer: seed data, localStorage, CRUD
-    router.js                 Minimal hash-based router
-    ui.js                     Shared formatting/rendering helpers
-  views/
-    experiments.js            Experiments list + detail (Edit/Versions/API tabs)
-    featureFlags.js           Feature Flags list + detail
-    journeys.js                Journeys — content blocks, block-level personalization, Topics, Related content
-    segments.js                Segments — reusable visitor-population definitions
-    topics.js                  Topics — content taxonomy, cross-pillar
-    analytics.js                Read-only analytics dashboard
+    personalizable-fields.ts    Which fields of each block type can be overridden, and how
+  components/
+    BlockPicker.tsx              Picks one of a page's actual blocks (live-fetched)
+    FieldPicker.tsx              Picks one of a block's personalizable fields
+  app/(payload)/
+    admin/[[...segments]]/          Payload's admin UI
+    api/[...slug]/                  Payload's REST API
 ```
 
-`server.js` and `api/growthbook/*.js` both call the same functions in
-`growthbook-server.js` — one process model for local dev (`node server.js`,
-a persistent Node process), one for Vercel (stateless functions per
-request). Nothing about the GrowthBook logic itself differs between them.
+## Deploying
 
-## Resetting sample data
-
-Click "Reset sample data" at the bottom of the sidebar to wipe local edits
-and restore the original seed data.
+This demo intentionally uses SQLite for zero-infrastructure local setup. SQLite's
+single-file storage doesn't survive redeploys or work across multiple serverless
+instances, so a real deployment (e.g. Vercel) would need to switch the db adapter to
+`@payloadcms/db-postgres` (see `he-gets-us-cms`'s `payload.config.ts` for the pattern)
+before going further than local/demo use.
