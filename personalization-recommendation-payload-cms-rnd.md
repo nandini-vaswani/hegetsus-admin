@@ -1,4 +1,4 @@
-# Personalized content — what we built & how to test it
+# Personalized content & recommendations — what we built & how to test it
 
 R&D with Payload CMS for personalization of content.
 
@@ -100,6 +100,34 @@ This is the only place in the whole system where one document holds more than on
 
 The reason this holds up as a design: the CMS's job stops at "store content under a key, addressed by a stable surface" — it never needs to know *why* a visitor got that key. That boundary is what lets the experimentation layer change (or get swapped for a different vendor) without touching any of this.
 
+## Recommendations through Topics
+
+Separate from personalization, every page also carries **Topics** — a shared taxonomy describing what the content is *about* (e.g. "Grief", "Mindfulness", "Anxiety"), independent of who the visitor is. A page can carry several Topics at once, and Topics are shared across every page, not private tags per page.
+
+Because Topics are a real, queryable relationship rather than free-text tags, related-content recommendations fall out of them directly: **recommend any other page that shares at least one Topic with the page a visitor is currently on.**
+
+> Example: "The Path of Stillness" is tagged Grief and Mindfulness. A visitor reading it can be shown a "You might also like" list built by asking: which other pages are also tagged Grief or Mindfulness? Tag a page once, and it automatically becomes a candidate recommendation everywhere it shares a topic — no manual curation per page.
+
+### Worked example
+
+Four pages, each tagged with one or two Topics:
+
+| Page | Topics |
+|---|---|
+| The Path of Stillness | Grief, Mindfulness |
+| Sitting with Loss | Grief |
+| Breath and Presence | Mindfulness, Anxiety |
+| Managing Panic | Anxiety |
+
+A visitor reading **The Path of Stillness** (Grief, Mindfulness) gets recommended:
+
+- **Sitting with Loss** — shares Grief
+- **Breath and Presence** — shares Mindfulness
+
+**Managing Panic** is *not* recommended — it shares no Topic with the page the visitor is on (Anxiety alone doesn't overlap with Grief/Mindfulness). Tag one more page with Mindfulness later, and it becomes a recommendation candidate everywhere Mindfulness appears, automatically — no page's recommendation list needs to be hand-edited.
+
+This is also why Topics is kept separate from Variants: Topics answers *what a page is about* (content-side), Variants answers *which version of it a visitor sees* (visitor-side). Because the two are orthogonal, recommendations built from Topics work the same no matter which Variant a visitor lands on.
+
 ## The end-to-end flow
 
 ```
@@ -130,3 +158,4 @@ The key thing this proves out: **one flat list of rules is enough to cover page-
 4. **Create a second rule** (field-level test): this time pick the Hero block, then override its headline (and, if you like, its subhead too, in the same rule) — save and confirm both changes are attached to one rule.
 5. **Create a third rule** (list-level test): pick the Next Step block, override its options field, and add a named alternative list (e.g. "anxiety-focused") with its own set of options — save and confirm it reports itself as list-scoped.
 6. Each saved rule shows its own permanent address (page name, plus block name if one was picked) and which of the four scopes it landed in — that's the proof the right one was inferred automatically from what you filled in, not something you had to choose.
+7. **Recommendations test**: tag two different pages with the same Topic (e.g. both with "Mindfulness"). Confirm both show up when you look up pages tagged with that Topic — that shared tag is what a "related content" list would be built from.
