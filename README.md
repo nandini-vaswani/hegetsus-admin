@@ -42,27 +42,35 @@ serves the resolved content to the frontend.
 
 ## Run it
 
+Needs a Postgres database to point at — e.g. a local one:
+
 ```sh
+docker run -d --name hegetsus-pg \
+  -e POSTGRES_USER=payload -e POSTGRES_PASSWORD=payload -e POSTGRES_DB=hegetsus_admin \
+  -p 5432:5432 postgres:16-alpine
+```
+
+Then:
+
+```sh
+cp .env.example .env   # fill in DATABASE_URI to match the db above, and a PAYLOAD_SECRET
 pnpm install
 pnpm dev
 ```
 
-Then open **http://localhost:3000/admin** and create the first admin user.
+Open **http://localhost:3000/admin** and create the first admin user.
 
-Data is stored in a local SQLite file (`hegetsus-admin.db`, gitignored) — no external
-database or Docker required.
-
-Note: the sqlite adapter runs in `push: true` mode (auto schema sync, no migrations).
-When a field is removed or renamed, `pnpm dev` will prompt interactively to confirm
-dropping the affected column — since that prompt blocks a backgrounded dev server, the
-simplest fix during active schema changes is to stop the server, delete
-`hegetsus-admin.db`, and restart.
+Note: the postgres adapter runs in `push: true` mode (auto schema sync, no migration
+files). When a field is removed or renamed, `pnpm dev` will prompt interactively to
+confirm dropping the affected column — since that prompt blocks a backgrounded dev
+server, the simplest fix during active schema changes is to stop the server, drop and
+recreate the database (or just the affected table), and restart.
 
 ## Project structure
 
 ```
 src/
-  payload.config.ts           Collections, sqlite adapter
+  payload.config.ts           Collections, postgres adapter
   collections/
     Users.ts                  Bare auth collection
     Media.ts                  Local-disk uploads (Hero/Video block images/video)
@@ -84,8 +92,7 @@ src/
 
 ## Deploying
 
-This demo intentionally uses SQLite for zero-infrastructure local setup. SQLite's
-single-file storage doesn't survive redeploys or work across multiple serverless
-instances, so a real deployment (e.g. Vercel) would need to switch the db adapter to
-`@payloadcms/db-postgres` (see `he-gets-us-cms`'s `payload.config.ts` for the pattern)
-before going further than local/demo use.
+Runs on `@payloadcms/db-postgres`, so it's safe to deploy to a serverless platform like
+Vercel — point `DATABASE_URI` at a real hosted Postgres instance (e.g. Neon, Vercel
+Postgres) via the project's environment variables. `push: true` will sync the schema on
+first boot against an empty database.
